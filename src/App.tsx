@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LandingPage } from './components/LandingPage';
 import { Layout } from './components/Layout';
 import { LoginForm } from './components/Auth/LoginForm';
 import { RoleSelection } from './components/Auth/RoleSelection';
@@ -51,12 +52,12 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/login" element={<LoginRoute />} />
           <Route
             path="/"
             element={
-              <ProtectedRoute>
-                <Navigate to="/dashboard" replace />
-              </ProtectedRoute>
+              <Navigate to="/landing" replace />
             }
           />
           <Route
@@ -127,6 +128,28 @@ function App() {
       </Router>
     </AuthProvider>
   );
+}
+
+function LoginRoute() {
+  const { user, profile, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (user && profile) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (user && !profile) {
+    return <RoleSelection />;
+  }
+
+  return <LoginForm />;
 }
 
 export default App;
