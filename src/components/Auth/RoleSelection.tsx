@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Megaphone, Radio, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { beninLocations, departments, getCitiesByDepartment } from '../../data/beninLocations';
 
 export function RoleSelection() {
   const [selectedRole, setSelectedRole] = useState<'advertiser' | 'broadcaster' | null>(null);
   const [formData, setFormData] = useState({
     full_name: '',
-    region: '',
+    department: '',
     city: '',
     age: '',
     gender: '',
@@ -17,12 +18,23 @@ export function RoleSelection() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+
   const { user, updateProfile } = useAuth();
 
   const interestOptions = [
     'Mode', 'Sport', 'Technologie', 'Cuisine', 'Voyage', 'Musique',
     'Film & TV', 'Santé', 'Education', 'Business', 'Art', 'Gaming'
   ];
+
+  const handleDepartmentChange = (department: string) => {
+    setFormData(prev => ({
+      ...prev,
+      department,
+      city: '' // Reset city when department changes
+    }));
+    setAvailableCities(getCitiesByDepartment(department));
+  };
 
   const handleInterestToggle = (interest: string) => {
     setFormData(prev => ({
@@ -47,7 +59,7 @@ export function RoleSelection() {
         phone_number: user.phone || '',
         full_name: formData.full_name,
         role: selectedRole,
-        region: formData.region,
+        region: formData.department, // Store department as region
         city: formData.city,
         age: formData.age ? parseInt(formData.age) : null,
         gender: formData.gender || null,
@@ -181,28 +193,43 @@ export function RoleSelection() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Région *
+                  Département *
                 </label>
-                <input
-                  type="text"
-                  value={formData.region}
-                  onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                <select
+                  value={formData.department}
+                  onChange={(e) => handleDepartmentChange(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
-                />
+                >
+                  <option value="">Sélectionner un département</option>
+                  {departments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ville *
                 </label>
-                <input
-                  type="text"
+                <select
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!formData.department}
                   required
-                />
+                >
+                  <option value="">
+                    {formData.department ? 'Sélectionner une ville' : 'Sélectionnez d\'abord un département'}
+                  </option>
+                  {availableCities.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -271,7 +298,7 @@ export function RoleSelection() {
 
             <button
               type="submit"
-              disabled={loading || !formData.full_name || !formData.region || !formData.city}
+              disabled={loading || !formData.full_name || !formData.department || !formData.city}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               {loading ? (
